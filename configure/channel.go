@@ -40,10 +40,9 @@ func Init() {
 }
 
 // set/reset a random key for channel
-func (r *RoomKeysType) SetKey(channel string, sum string) (key string, err error) {
+func (r *RoomKeysType) SetKey(channel string, key string) (err error) {
 	if !saveInLocal {
 		for {
-			key = sum
 			if _, err = r.redisCli.Get(key).Result(); err == redis.Nil {
 				err = r.redisCli.Set(channel, key, 0).Err()
 				if err != nil {
@@ -59,7 +58,6 @@ func (r *RoomKeysType) SetKey(channel string, sum string) (key string, err error
 	}
 
 	for {
-		key = sum
 		if _, found := r.localCache.Get(key); !found {
 			r.localCache.SetDefault(channel, key)
 			r.localCache.SetDefault(key, channel)
@@ -69,7 +67,7 @@ func (r *RoomKeysType) SetKey(channel string, sum string) (key string, err error
 	return
 }
 
-func (r *RoomKeysType) GetKey(channel string) (newKey string, err error) {
+func (r *RoomKeysType) GetKey(channel string) (foundKey string, err error) {
 	var key interface{}
 	var found bool
 	if key, found = r.localCache.Get(channel); found {

@@ -23,6 +23,7 @@ type Response struct {
 	w      http.ResponseWriter
 	Status int         `json:"status"`
 	Data   interface{} `json:"data"`
+	Error  string      `json:"error"`
 }
 
 func (r *Response) SendJson() (int, error) {
@@ -403,19 +404,22 @@ func (s *Server) handleGet(w http.ResponseWriter, r *http.Request) {
 		res.Data = "url: /control/get?room=<ROOM_NAME>"
 		return
 	}
+	getKey, getErr := configure.RoomKeys.GetKey(room)
+	if getErr == nil {
+		if len(getKey) > 0 {
+			res.Status = 200
+			res.Data = getKey
+			return
+		}
+	}
 	sum := sha256.Sum256([]byte(id + secret))
 	sumHex := fmt.Sprintf("%x", sum)
-	msg, err := configure.RoomKeys.SetKey(room, sumHex)
-	_, err2 := configure.RoomKeys.GetKey(room)
-	if err2 != nil {
-		msg = err.Error()
+	setError := configure.RoomKeys.SetKey(room, sumHex)
+	if setError != nil {
+		res.Error = setError.Error()
 		res.Status = 400
 	}
-	if err != nil {
-		msg = err.Error()
-		res.Status = 400
-	}
-	res.Data = msg
+	res.Data = sumHex
 }
 
 //http://127.0.0.1:8090/control/delete?room=ROOM_NAME

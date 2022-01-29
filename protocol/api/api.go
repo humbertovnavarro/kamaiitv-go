@@ -1,6 +1,7 @@
 package api
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -15,6 +16,8 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
 )
+
+var secret string = configure.Config.GetString("secret")
 
 type Response struct {
 	w      http.ResponseWriter
@@ -113,9 +116,6 @@ func (s *Server) Serve(l net.Listener) error {
 	})
 	mux.HandleFunc("/control/get", func(w http.ResponseWriter, r *http.Request) {
 		s.handleGet(w, r)
-	})
-	mux.HandleFunc("/control/reset", func(w http.ResponseWriter, r *http.Request) {
-		s.handleReset(w, r)
 	})
 	mux.HandleFunc("/control/delete", func(w http.ResponseWriter, r *http.Request) {
 		s.handleDelete(w, r)
@@ -374,38 +374,6 @@ func (s *Server) handlePush(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-//http://127.0.0.1:8090/control/reset?room=ROOM_NAME
-func (s *Server) handleReset(w http.ResponseWriter, r *http.Request) {
-	res := &Response{
-		w:      w,
-		Data:   nil,
-		Status: 200,
-	}
-	defer res.SendJson()
-
-	if err := r.ParseForm(); err != nil {
-		res.Status = 400
-		res.Data = "url: /control/reset?room=<ROOM_NAME>"
-		return
-	}
-	room := r.Form.Get("room")
-
-	if len(room) == 0 {
-		res.Status = 400
-		res.Data = "url: /control/reset?room=<ROOM_NAME>"
-		return
-	}
-
-	msg, err := configure.RoomKeys.SetKey(room)
-
-	if err != nil {
-		msg = err.Error()
-		res.Status = 400
-	}
-
-	res.Data = msg
-}
-
 //http://127.0.0.1:8090/control/get?room=ROOM_NAME
 func (s *Server) handleGet(w http.ResponseWriter, r *http.Request) {
 	res := &Response{
@@ -422,14 +390,27 @@ func (s *Server) handleGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	room := r.Form.Get("room")
+	id := r.Form.Get("id")
+
+	if len(id) == 0 {
+		res.Status = 400
+		res.Data = "No id provided"
+		return
+	}
 
 	if len(room) == 0 {
 		res.Status = 400
 		res.Data = "url: /control/get?room=<ROOM_NAME>"
 		return
 	}
-
-	msg, err := configure.RoomKeys.GetKey(room)
+	sum := sha256.Sum256([]byte(id + secret))
+	sumHex := fmt.Sprintf("%x", sum)
+	msg, err := configure.RoomKeys.SetKey(room, sumHex)
+	_, err2 := configure.RoomKeys.GetKey(room)
+	if err2 != nil {
+		msg = err.Error()
+		res.Status = 400
+	}
 	if err != nil {
 		msg = err.Error()
 		res.Status = 400

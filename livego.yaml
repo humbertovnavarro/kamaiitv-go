@@ -1,6 +1,5 @@
 # # Logger level
-# level: info
-
+level: debug
 # # FLV Options
 # flv_archive: false
 # flv_dir: "./tmp"
@@ -23,3 +22,5 @@ server:
   hls: true
   api: true
   flv: true
+next_node: "http://localhost:8090"
+node_id: "hello"

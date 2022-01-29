@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-redis/redis/v7"
+	"github.com/gwuhaolin/livego/utils/uid"
 	"github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
 )
@@ -39,10 +40,18 @@ func Init() {
 	log.Info("Redis connected")
 }
 
-// set/reset a random key for channel
+// set a fixed key for the channel
 func (r *RoomKeysType) SetKey(channel string, key string) (err error) {
+	r.localCache.SetDefault(channel, key)
+	r.localCache.SetDefault(key, channel)
+	return
+}
+
+// Get a random key for the channel
+func (r *RoomKeysType) GetKey(channel string) (key string, err error) {
 	if !saveInLocal {
 		for {
+			key = uid.RandStringRunes(48)
 			if _, err = r.redisCli.Get(key).Result(); err == redis.Nil {
 				err = r.redisCli.Set(channel, key, 0).Err()
 				if err != nil {
@@ -56,22 +65,13 @@ func (r *RoomKeysType) SetKey(channel string, key string) (err error) {
 			}
 		}
 	}
-
 	for {
+		key = uid.RandStringRunes(48)
 		if _, found := r.localCache.Get(key); !found {
 			r.localCache.SetDefault(channel, key)
 			r.localCache.SetDefault(key, channel)
 			break
 		}
-	}
-	return
-}
-
-func (r *RoomKeysType) GetKey(channel string) (foundKey string, err error) {
-	var key interface{}
-	var found bool
-	if key, found = r.localCache.Get(channel); found {
-		return key.(string), nil
 	}
 	return
 }

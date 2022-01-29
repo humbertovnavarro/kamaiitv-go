@@ -1,11 +1,12 @@
 package api
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/gwuhaolin/livego/av"
 	"github.com/gwuhaolin/livego/configure"
@@ -16,8 +17,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
 )
-
-var secret string = configure.Config.GetString("secret")
 
 type Response struct {
 	w      http.ResponseWriter
@@ -120,6 +119,9 @@ func (s *Server) Serve(l net.Listener) error {
 	})
 	mux.HandleFunc("/control/delete", func(w http.ResponseWriter, r *http.Request) {
 		s.handleDelete(w, r)
+	})
+	mux.HandleFunc("/control/set", func(w http.ResponseWriter, r *http.Request) {
+		s.handleSet(w, r)
 	})
 	mux.HandleFunc("/stat/livestat", func(w http.ResponseWriter, r *http.Request) {
 		s.GetLiveStatics(w, r)
@@ -375,6 +377,94 @@ func (s *Server) handlePush(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+//http://127.0.0.1:8090/control/set?room=room?key=key&node=node&ttl=ttl
+func (s *Server) handleSet(w http.ResponseWriter, r *http.Request) {
+	res := &Response{
+		w:      w,
+		Data:   "ok",
+		Status: 200,
+	}
+	defer res.SendJson()
+
+	if err := r.ParseForm(); err != nil {
+		res.Status = 400
+		res.Data = "url: set?room=room&key=key&node=node"
+		return
+	}
+	ttl := r.Form.Get("ttl")
+	key := r.Form.Get("key")
+	room := r.Form.Get("room")
+	node := r.Form.Get("node")
+	if len(key) == 0 || len(room) == 0 || len(ttl) == 0 {
+		res.Status = 400
+		res.Data = "key or room or ttl is empty"
+		return
+	}
+	ttlNum, parseErr := strconv.Atoi(ttl)
+	if parseErr != nil {
+		res.Status = 400
+		res.Data = "ttl is not a number"
+		return
+	}
+	if len(node) == 0 {
+		res.Status = 400
+		res.Data = "node is empty"
+		return
+	}
+	// ip := net.ParseIP(r.RemoteAddr[0:strings.Index(r.RemoteAddr, ":")])
+	// if ip.IsLoopback() {
+	// 	res.Status = 400
+	// 	res.Data = "ip is loopback"
+	// 	log.Warn("got loopback ip when propagating")
+	// 	return
+	// }
+	err := configure.RoomKeys.SetKey(room, key)
+	if err != nil {
+		res.Status = 500
+		res.Data = "internal error"
+	} else {
+		if ttlNum < 0 {
+			log.Debugf("packet died by ttl")
+			return
+		}
+		go propagateKey(room, key, node, ttlNum-1)
+	}
+}
+
+func startPropagateKey(room string, key string, node string, ttl int) (err error) {
+	next := os.Getenv("NEXT_NODE")
+	url := fmt.Sprintf("%s/control/set?room=%s&key=%s&node=%s&ttl=%d", next, room, key, node, ttl)
+	log.Debugf("started progragating room key pair: %v %v, to %s", room, key, url)
+	post, err := http.Get(url)
+	if err != nil {
+		log.Errorf("error posting to %s: %v", url, err)
+		post.Body.Close()
+		return err
+	}
+	post.Body.Close()
+	return err
+}
+
+func propagateKey(room string, key string, node string, ttl int) (err error) {
+	log.Printf("propagating room key pair: %v %v, to %s", room, key, node)
+	nodeKey := os.Getenv("NODE_ID")
+	if nodeKey == node {
+		log.Debugf("key pair finished round trip : %v %v", room, key)
+		return nil
+	}
+	next := os.Getenv("NEXT_NODE")
+	url := fmt.Sprintf("%s/control/set?room=%s&key=%s&node=%s&ttl=%d", next, room, key, node, ttl)
+	log.Debugf("started progragating room key pair: %v %v, to %s", room, key, url)
+	post, err := http.Get(url)
+	if err != nil {
+		log.Errorf("error posting to %s: %v", url, err)
+		post.Body.Close()
+		return err
+	}
+	post.Body.Close()
+	return err
+}
+
 //http://127.0.0.1:8090/control/get?room=ROOM_NAME
 func (s *Server) handleGet(w http.ResponseWriter, r *http.Request) {
 	res := &Response{
@@ -391,35 +481,30 @@ func (s *Server) handleGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	room := r.Form.Get("room")
-	id := r.Form.Get("id")
-
-	if len(id) == 0 {
-		res.Status = 400
-		res.Data = "No id provided"
-		return
-	}
 
 	if len(room) == 0 {
 		res.Status = 400
 		res.Data = "url: /control/get?room=<ROOM_NAME>"
 		return
 	}
-	getKey, getErr := configure.RoomKeys.GetKey(room)
-	if getErr == nil {
-		if len(getKey) > 0 {
-			res.Status = 200
-			res.Data = getKey
-			return
-		}
-	}
-	sum := sha256.Sum256([]byte(id + secret))
-	sumHex := fmt.Sprintf("%x", sum)
-	setError := configure.RoomKeys.SetKey(room, sumHex)
-	if setError != nil {
-		res.Error = setError.Error()
+
+	msg, err := configure.RoomKeys.GetKey(room)
+	if err != nil {
+		msg = err.Error()
 		res.Status = 400
+	} else {
+		ttlEnv := os.Getenv("TTL")
+		if len(ttlEnv) == 0 {
+			ttlEnv = "100"
+		}
+		ttl, err := strconv.Atoi(ttlEnv)
+		if err != nil {
+			ttl = 100
+			log.Error("TTL environment variable is not a parsable integer, defaulting to 100")
+		}
+		go startPropagateKey(room, msg, os.Getenv("NODE_ID"), ttl)
 	}
-	res.Data = sumHex
+	res.Data = msg
 }
 
 //http://127.0.0.1:8090/control/delete?room=ROOM_NAME

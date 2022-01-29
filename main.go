@@ -12,6 +12,7 @@ import (
 	"github.com/gwuhaolin/livego/protocol/hls"
 	"github.com/gwuhaolin/livego/protocol/httpflv"
 	"github.com/gwuhaolin/livego/protocol/rtmp"
+	"github.com/joho/godotenv"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -118,6 +119,10 @@ func init() {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("livego panic: ", r)
@@ -126,11 +131,11 @@ func main() {
 	}()
 
 	log.Infof(`
-     _     _            ____       
-    | |   (_)_   _____ / ___| ___  
-    | |   | \ \ / / _ \ |  _ / _ \ 
+     _     _            ____
+    | |   (_)_   _____ / ___| ___
+    | |   | \ \ / / _ \ |  _ / _ \
     | |___| |\ V /  __/ |_| | (_) |
-    |_____|_| \_/ \___|\____|\___/ 
+    |_____|_| \_/ \___|\____|\___/
         version: %s
 	`, VERSION)
 

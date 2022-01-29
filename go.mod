@@ -7,6 +7,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-redis/redis/v7 v7.2.0
 	github.com/gorilla/mux v1.7.4 // indirect
+	github.com/joho/godotenv v1.4.0 // indirect
 	github.com/kr/pretty v0.1.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/satori/go.uuid v1.2.0

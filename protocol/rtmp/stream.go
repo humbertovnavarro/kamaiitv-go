@@ -1,7 +1,10 @@
 package rtmp
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -56,7 +59,13 @@ func (rs *RtmpStream) HandleReader(r av.ReadCloser) {
 func (rs *RtmpStream) HandleWriter(w av.WriteCloser) {
 	info := w.Info()
 	log.Debugf("HandleWriter: info[%v]", info)
-
+	values := map[string]string{"channel": info.Key[5:], "type": "join"}
+	jsonValue, _ := json.Marshal(values)
+	resp, err := http.Post("http://localhost:3000/api/channel/notify/viewer", "application/json", bytes.NewBuffer(jsonValue))
+	if err != nil {
+		log.Errorf("http post error: %v", err)
+	}
+	resp.Body.Close()
 	var s *Stream
 	item, ok := rs.streams.Load(info.Key)
 	if !ok {
@@ -348,6 +357,13 @@ func (s *Stream) TransStart() {
 				//log.Debugf("w.Write: type=%v, %v", writeType, v.w.Info())
 				if err = v.w.Write(&newPacket); err != nil {
 					log.Debugf("[%s] write packet error: %v, remove", v.w.Info(), err)
+					values := map[string]string{"channel": v.w.Info().Key[5:], "type": "leave"}
+					jsonValue, _ := json.Marshal(values)
+					resp, err := http.Post("http://localhost:3000/api/channel/notify/viewer", "application/json", bytes.NewBuffer(jsonValue))
+					if err != nil {
+						log.Errorf("http post error: %v", err)
+					}
+					resp.Body.Close()
 					s.ws.Delete(key)
 				}
 			}
@@ -397,8 +413,14 @@ func (s *Stream) closeInter() {
 	if s.r != nil {
 		s.StopStaticPush()
 		log.Debugf("[%v] publisher closed", s.r.Info())
+		values := map[string]string{"channel": s.r.Info().Key[5:]}
+		jsonValue, _ := json.Marshal(values)
+		resp, err := http.Post("http://localhost:3000/api/channel/notify/closed", "application/json", bytes.NewBuffer(jsonValue))
+		if err != nil {
+			log.Errorf("http post error: %v", err)
+		}
+		resp.Body.Close()
 	}
-
 	s.ws.Range(func(key, val interface{}) bool {
 		v := val.(*PackWriterCloser)
 		if v.w != nil {

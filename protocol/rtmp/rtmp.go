@@ -1,8 +1,11 @@
 package rtmp
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
@@ -139,6 +142,13 @@ func (s *Server) handleConn(conn *core.Conn) error {
 			log.Error("CheckKey err: ", err)
 			return err
 		}
+		values := map[string]string{"channel": channel}
+		jsonValue, _ := json.Marshal(values)
+		resp, err := http.Post("http://localhost:3000/api/channel/notify/opened", "application/json", bytes.NewBuffer(jsonValue))
+		if err != nil {
+			log.Errorf("http post error: %v", err)
+		}
+		resp.Body.Close()
 		connServer.PublishInfo.Name = channel
 		if pushlist, ret := configure.GetStaticPushUrlList(appname); ret && (pushlist != nil) {
 			log.Debugf("GetStaticPushUrlList: %v", pushlist)

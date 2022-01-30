@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -502,6 +503,15 @@ func (s *Server) handleGet(w http.ResponseWriter, r *http.Request) {
 			ttl = 100
 			log.Error("TTL environment variable is not a parsable integer, defaulting to 100")
 		}
+		// Notify node of the key
+		values := map[string]string{"channel": room, "key": msg}
+		jsonValue, _ := json.Marshal(values)
+		resp, err := http.Post("http://localhost:3000/api/channel/notify/genkey", "application/json", bytes.NewBuffer(jsonValue))
+		if err != nil {
+			log.Errorf("http post error: %v", err)
+		}
+		resp.Body.Close()
+		//
 		go startPropagateKey(room, msg, os.Getenv("NODE_ID"), ttl)
 	}
 	res.Data = msg

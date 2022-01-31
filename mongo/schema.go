@@ -16,6 +16,8 @@ type User struct {
 	Status        string `bson:"status,omitempty"`
 }
 
+var MessageCollection = &mongo.Collection{}
+
 type Message struct {
 	ID       string `bson:"_id,omitempty"`
 	Username string `bson:"username,omitempty"`
@@ -24,6 +26,16 @@ type Message struct {
 	Deleted  bool   `bson:"deleted,omitempty"`
 }
 
+var NodeCollection = &mongo.Collection{}
+
+type Node struct {
+	ID           string `bson:"_id,omitempty"`
+	Hostname     string `bson:"hostname,omitempty"`
+	LoadBalancer string `bson:"loadBalancer,omitempty"`
+}
+
 func schema(db *mongo.Database) {
+	MessageCollection = db.Collection("Messages")
 	UserCollection = db.Collection("Users")
+	NodeCollection = db.Collection("Nodes")
 }

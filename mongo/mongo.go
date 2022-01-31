@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+var Ctx context.Context
 var DB *mongo.Database = nil
 
 func Connect() {
@@ -21,6 +22,7 @@ func Connect() {
 		log.Fatal(err)
 	}
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	Ctx = ctx
 	err = client.Connect(ctx)
 	if err != nil {
 		log.Fatal(err)

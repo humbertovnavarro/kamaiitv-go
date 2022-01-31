@@ -151,7 +151,7 @@ func main() {
 		if app.Api {
 			startAPI(stream)
 		}
-		api.StartKamaiiTV()
+		go api.StartKamaiiTV()
 		startRtmp(stream, hlsServer)
 	}
 }

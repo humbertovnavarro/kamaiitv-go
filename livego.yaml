@@ -19,7 +19,7 @@ level: debug
 server:
 - appname: live
   live: true
-  hls: true
+  hls: false
   api: true
   flv: true
 redis_addr:  172.27.181.6:6379

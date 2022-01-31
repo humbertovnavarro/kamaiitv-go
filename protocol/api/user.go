@@ -30,7 +30,7 @@ func RegisterUser(c *gin.Context) {
 		c.AbortWithStatusJSON(400, gin.H{"error": "valid password is required"})
 		return
 	}
-	if registration.Username == "" || !IsValidPassword.MatchString(registration.Password) {
+	if registration.Username == "" || !IsValidPassword.MatchString(registration.Username) {
 		c.AbortWithStatusJSON(400, gin.H{"error": "valid username is required"})
 		return
 	}

@@ -53,7 +53,7 @@ func (r *RoomKeysType) AddViewer(channel string) (err error) {
 		log.Warn("[VIEWERS] ", err)
 		return err
 	}
-	r.redisCli.Set("stream:"+channel, viewerNum+1, 0)
+	r.redisCli.Set(channel+":stream", viewerNum+1, 0)
 	return
 }
 
@@ -69,7 +69,7 @@ func (r *RoomKeysType) SubtractViewer(channel string) (err error) {
 		log.Warn("[VIEWERS] ", err)
 		return
 	}
-	r.redisCli.Set("stream:"+channel, viewerNum-1, 0)
+	r.redisCli.Set(channel+":stream", viewerNum-1, 0)
 	return
 }
 

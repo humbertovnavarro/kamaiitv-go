@@ -1,6 +1,5 @@
 # # Logger level
-# level: info
-
+level: debug
 # # FLV Options
 # flv_archive: false
 # flv_dir: "./tmp"
@@ -23,3 +22,4 @@ server:
   hls: true
   api: true
   flv: true
+redis_addr:  172.27.181.6:6379

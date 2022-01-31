@@ -3,8 +3,9 @@ package hls
 import (
 	"bytes"
 	"fmt"
-	"github.com/gwuhaolin/livego/configure"
 	"time"
+
+	"github.com/gwuhaolin/livego/configure"
 
 	"github.com/gwuhaolin/livego/av"
 	"github.com/gwuhaolin/livego/container/flv"
@@ -128,6 +129,7 @@ func (source *Source) SendPacket() error {
 	}()
 
 	log.Debugf("[%v] hls sender start", source.info)
+	configure.RoomKeys.AddViewer(source.info.Key[5:])
 	for {
 		if source.closed {
 			return fmt.Errorf("closed")

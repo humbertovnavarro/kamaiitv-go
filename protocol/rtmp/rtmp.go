@@ -139,6 +139,7 @@ func (s *Server) handleConn(conn *core.Conn) error {
 			log.Error("CheckKey err: ", err)
 			return err
 		}
+		configure.RoomKeys.SetStream(channel)
 		connServer.PublishInfo.Name = channel
 		if pushlist, ret := configure.GetStaticPushUrlList(appname); ret && (pushlist != nil) {
 			log.Debugf("GetStaticPushUrlList: %v", pushlist)

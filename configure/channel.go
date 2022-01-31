@@ -2,6 +2,7 @@ package configure
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/gwuhaolin/livego/utils/uid"
 
@@ -41,6 +42,45 @@ func Init() {
 	log.Info("Redis connected")
 }
 
+func (r *RoomKeysType) AddViewer(channel string) (err error) {
+	log.Debug(channel)
+	viewers, err := r.redisCli.Get("stream:" + channel).Result()
+	if err != nil {
+		log.Warn("[VIEWERS] ", err)
+	}
+	viewerNum, err := strconv.Atoi(viewers)
+	if err != nil {
+		log.Warn("[VIEWERS] ", err)
+	}
+	r.redisCli.Set("stream:"+channel, viewerNum+1, 0)
+	return
+}
+
+func (r *RoomKeysType) SubtractViewer(channel string) (err error) {
+	log.Debug(channel)
+	viewers, err := r.redisCli.Get("stream:" + channel).Result()
+	if err != nil {
+		log.Warn("[VIEWERS] ", err)
+	}
+	viewerNum, err := strconv.Atoi(viewers)
+	if err != nil {
+		log.Warn("[VIEWERS] ", err)
+	}
+	r.redisCli.Set("stream:"+channel, viewerNum-1, 0)
+	return
+}
+
+func (r *RoomKeysType) DeleteStream(channel string) (err error) {
+	log.Debug("[STREAM] delete ", channel)
+	r.redisCli.Del("stream:" + channel)
+	return
+}
+
+func (r *RoomKeysType) SetStream(channel string) (err error) {
+	r.redisCli.Set("stream:"+channel, -1, 0)
+	return
+}
+
 // set/reset a random key for channel
 func (r *RoomKeysType) SetKey(channel string) (key string, err error) {
 	if !saveInLocal {
@@ -73,12 +113,11 @@ func (r *RoomKeysType) SetKey(channel string) (key string, err error) {
 
 func (r *RoomKeysType) GetKey(channel string) (newKey string, err error) {
 	if !saveInLocal {
-		if newKey, err = r.redisCli.Get(channel).Result(); err == redis.Nil {
+		if newKey, err = r.redisCli.Get("key:" + channel).Result(); err == redis.Nil {
 			newKey, err = r.SetKey(channel)
 			log.Debugf("[KEY] new channel [%s]: %s", channel, newKey)
 			return
 		}
-
 		return
 	}
 

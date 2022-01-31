@@ -43,7 +43,7 @@ func Init() {
 }
 
 func (r *RoomKeysType) AddViewer(channel string) (err error) {
-	log.Debug(channel)
+
 	viewers, err := r.redisCli.Get("stream:" + channel).Result()
 	if err != nil {
 		log.Warn("[VIEWERS] ", err)

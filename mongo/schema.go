@@ -7,6 +7,7 @@ import (
 var UserCollection = &mongo.Collection{}
 
 type User struct {
+	ID            string `bson:"_id"`
 	Username      string `bson:"username,omitempty"`
 	UsernameLower string `bson:"usernameLower,omitempty"`
 	Password      string `bson:"password,omitempty"`

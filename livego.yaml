@@ -22,6 +22,6 @@ server:
   hls: false
   api: true
   flv: true
-redis_addr:  172.27.181.6:6379
+redis_addr:  localhost:6379
 mongo_uri: mongodb+srv://dev:iyKDY0NHx5foDBew@cluster0.avpov.mongodb.net/myFirstDatabase?retryWrites=true&w=majority
-secret: "supersecret"
+secret: supersecretsupersecretsupersecretsupersecret

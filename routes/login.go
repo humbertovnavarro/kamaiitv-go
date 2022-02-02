@@ -3,6 +3,7 @@ package routes
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gwuhaolin/livego/mongo"
@@ -41,14 +42,24 @@ func LoginUser(c *gin.Context) {
 		"$or": bson.A{query, email},
 	}).Decode(&user)
 	if user == nil {
-		c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized"})
+		c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized1"})
 		return
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(user["password"].(string)), []byte(registration.Password)); err != nil {
-		c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized"})
+	userPassword := []byte(user.Password)
+	dbPassword := []byte(registration.Password)
+	if err := bcrypt.CompareHashAndPassword(userPassword, dbPassword); err != nil {
+		c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized2"})
 		return
 	}
-	token, err := signToken(user.)
-	c.SetCookie("token", Sign)
-	c.JSON(200, gin.H{"error": "ok"})
+	tkStrct := AuthToken{
+		Issuer:  user.ID,
+		Subject: c.Request.UserAgent(),
+	}
+	token, err := signToken(tkStrct)
+	if err != nil {
+		c.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
+		return
+	}
+	c.SetCookie("token", token, int(time.Hour*24*14), "", "", false, true)
+	c.JSON(200, gin.H{"token": token})
 }

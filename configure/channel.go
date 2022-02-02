@@ -133,6 +133,14 @@ func (r *RoomKeysType) GetKey(channel string) (newKey string, err error) {
 	return
 }
 
+func (r *RoomKeysType) GetAllLiveChannels(s uint64, e uint64) (keys []string, cursor uint64, err error) {
+	return r.redisCli.Scan(s, "*:stream", int64(e)).Result()
+}
+
+func (r *RoomKeysType) GetLiveChannel(id string) (channel string, err error) {
+	return r.redisCli.Get(id + ":stream").Result()
+}
+
 func (r *RoomKeysType) GetChannel(key string) (channel string, err error) {
 	if !saveInLocal {
 		return r.redisCli.Get("key:" + key).Result()
@@ -148,7 +156,7 @@ func (r *RoomKeysType) GetChannel(key string) (channel string, err error) {
 
 func (r *RoomKeysType) DeleteChannel(channel string) bool {
 	if !saveInLocal {
-		return r.redisCli.Del(channel+":key").Err() != nil
+		return r.redisCli.Del(channel+"*").Err() != nil
 	}
 
 	key, ok := r.localCache.Get(channel)

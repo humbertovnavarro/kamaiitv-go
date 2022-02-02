@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/gwuhaolin/livego/configure"
-	"github.com/gwuhaolin/livego/mongo"
 	"github.com/gwuhaolin/livego/protocol/api"
 	"github.com/gwuhaolin/livego/protocol/hls"
 	"github.com/gwuhaolin/livego/protocol/httpflv"
@@ -119,8 +118,6 @@ func init() {
 }
 
 func main() {
-	mongo.Connect()
-	defer mongo.Disconnect()
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("livego panic: ", r)

@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gwuhaolin/livego/configure"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -33,6 +34,11 @@ func Connect() {
 	}
 	log.Info("connected to mongodb")
 	DB = client.Database("kamaiitv")
+	db, err := client.ListDatabaseNames(ctx, bson.M{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Info("mongodb databases: ", db)
 	schema(DB)
 }
 func Disconnect() {

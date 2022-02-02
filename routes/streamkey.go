@@ -2,14 +2,24 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/gwuhaolin/livego/configure"
 )
 
 func GetStreamKey(c *gin.Context) {
-	token, err := extractToken(c)
-	if err != nil {
-		c.JSON(401, err.Error())
-		c.Abort()
+	user := c.GetString("user")
+	if user == "" {
+		c.AbortWithStatusJSON(500, gin.H{"error": "internal error"})
 		return
 	}
-	token.Claims["id"]
+	key, err := configure.RoomKeys.GetKey(user)
+	if err != nil {
+		c.AbortWithStatusJSON(500, gin.H{"error": "internal error"})
+		return
+	}
+	c.JSON(200, gin.H{"key": key, "error": "ok"})
+}
+
+func DeleteStreamKey(c *gin.Context) {
+	key := c.Param("key")
+	configure.RoomKeys.DeleteKey(key)
 }

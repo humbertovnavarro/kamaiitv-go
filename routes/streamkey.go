@@ -22,4 +22,5 @@ func GetStreamKey(c *gin.Context) {
 func DeleteStreamKey(c *gin.Context) {
 	key := c.Param("key")
 	configure.RoomKeys.DeleteKey(key)
+	c.JSON(200, gin.H{"error": "ok"})
 }

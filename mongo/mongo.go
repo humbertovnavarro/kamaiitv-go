@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -18,6 +19,7 @@ var DB *mongo.Database = nil
 
 func Connect() {
 	uri := configure.Config.GetString("mongo_uri")
+	fmt.Print("connecting to mongodb: ", uri, "\n")
 	client, err := mongo.NewClient(options.Client().ApplyURI(uri))
 	if err != nil {
 		log.Fatal(err)

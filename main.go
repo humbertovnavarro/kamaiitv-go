@@ -12,7 +12,6 @@ import (
 	"github.com/gwuhaolin/livego/protocol/hls"
 	"github.com/gwuhaolin/livego/protocol/httpflv"
 	"github.com/gwuhaolin/livego/protocol/rtmp"
-
 	log "github.com/sirupsen/logrus"
 )
 
@@ -124,16 +123,6 @@ func main() {
 			time.Sleep(1 * time.Second)
 		}
 	}()
-
-	log.Infof(`
-     _     _            ____
-    | |   (_)_   _____ / ___| ___
-    | |   | \ \ / / _ \ |  _ / _ \
-    | |___| |\ V /  __/ |_| | (_) |
-    |_____|_| \_/ \___|\____|\___/
-        version: %s
-	`, VERSION)
-
 	apps := configure.Applications{}
 	configure.Config.UnmarshalKey("server", &apps)
 	for _, app := range apps {
@@ -148,7 +137,7 @@ func main() {
 		if app.Api {
 			startAPI(stream)
 		}
-		go api.StartKamaiiTV()
+		api.StartKamaiiTV()
 		startRtmp(stream, hlsServer)
 	}
 }

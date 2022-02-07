@@ -1,33 +1,62 @@
 package socketio
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
 	socketio "github.com/googollee/go-socket.io"
+	"github.com/googollee/go-socket.io/engineio"
+	"github.com/googollee/go-socket.io/engineio/transport"
+	"github.com/googollee/go-socket.io/engineio/transport/polling"
+	"github.com/googollee/go-socket.io/engineio/transport/websocket"
 )
 
-_, err := server.Adapter(&socketio.RedisAdapterOptions{
-    Host:   "127.0.0.1",
-    Port:   "6379",
-    Prefix: "socket.io",
-})
-if err != nil {
-    log.Fatal("error:", err)
+var allowOriginFunc = func(r *http.Request) bool {
+	return true
 }
 
-func Start() {
-	server := socketio.NewServer(nil)
+var IO = &socketio.Server{}
+
+func Start(redisAddress string) {
+	server := socketio.NewServer(&engineio.Options{
+		Transports: []transport.Transport{
+			&polling.Transport{
+				CheckOrigin: allowOriginFunc,
+			},
+			&websocket.Transport{
+				CheckOrigin: allowOriginFunc,
+			},
+		},
+	})
+	IO = server
+	_, err := server.Adapter(&socketio.RedisAdapterOptions{
+		Addr:    redisAddress,
+		Network: "tcp",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	server.OnConnect("/", func(s socketio.Conn) error {
-		s.SetContext("")
-		fmt.Println("connected:", s.ID())
+		authenticateSocket(s)
 		return nil
 	})
-	go server.Serve()
+
+	server.OnEvent("/", "chat", func(s socketio.Conn, msg string) {
+		handleChat(s, msg)
+	})
+
+	go func() {
+		if err := server.Serve(); err != nil {
+			log.Fatalf("socketio listen error: %s\n", err)
+		}
+	}()
 	defer server.Close()
 	http.Handle("/socket.io/", server)
-	http.Handle("/", http.FileServer(http.Dir("./asset")))
-	log.Println("Serving at localhost:8000...")
+	log.Println("Serving at localhost:8081...")
 	log.Fatal(http.ListenAndServe(":8081", nil))
+}
+
+func authenticateSocket(socketio.Conn) string {
+	return "1234"
 }

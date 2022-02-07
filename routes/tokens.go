@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -34,7 +33,7 @@ func signToken(token AuthToken) (string, error) {
 	return claims.SignedString(secret)
 }
 
-func decodeToken(tokenString string) (*jwt.StandardClaims, error) {
+func DecodeToken(tokenString string) (*jwt.StandardClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(secret), nil
 	})
@@ -47,13 +46,12 @@ func decodeToken(tokenString string) (*jwt.StandardClaims, error) {
 
 func TokenAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		fmt.Print("TokenAuthMiddleware")
 		tokenString, err := c.Cookie("token")
 		if err != nil {
 			c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized"})
 			return
 		}
-		claims, err := decodeToken(tokenString)
+		claims, err := DecodeToken(tokenString)
 		if err != nil {
 			c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized"})
 			return

@@ -6,8 +6,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-
-	"github.com/gwuhaolin/livego/configure"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -17,8 +15,7 @@ import (
 var Ctx context.Context
 var DB *mongo.Database = nil
 
-func Connect() {
-	uri := configure.Config.GetString("mongo_uri")
+func Connect(uri string) {
 	fmt.Print("connecting to mongodb: ", uri, "\n")
 	client, err := mongo.NewClient(options.Client().ApplyURI(uri))
 	if err != nil {

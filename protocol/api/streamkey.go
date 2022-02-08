@@ -1,4 +1,4 @@
-package routes
+package api
 
 import (
 	"github.com/gin-gonic/gin"
@@ -6,17 +6,13 @@ import (
 )
 
 func GetStreamKey(c *gin.Context) {
-	id := c.GetString("id")
-	if id == "" {
-		c.AbortWithStatusJSON(500, gin.H{"error": "internal error"})
-		return
-	}
-	key, err := configure.RoomKeys.GetKey(id)
+	user := c.MustGet("user").(*RequestUser)
+	key, err := configure.RoomKeys.GetKey(user.ID)
 	if err != nil {
 		c.AbortWithStatusJSON(500, gin.H{"error": "internal error"})
 		return
 	}
-	c.JSON(200, gin.H{"key": key, "error": "ok"})
+	c.JSON(200, gin.H{"key": key})
 }
 
 func DeleteStreamKey(c *gin.Context) {

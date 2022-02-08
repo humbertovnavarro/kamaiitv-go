@@ -3,15 +3,11 @@ package configure
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/go-redis/redis/v7"
-	"github.com/gwuhaolin/livego/mongo"
 	"github.com/gwuhaolin/livego/utils/uid"
 	"github.com/patrickmn/go-cache"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 type RoomKeysType struct {
@@ -182,24 +178,4 @@ func (r *RoomKeysType) DeleteKey(key string) bool {
 		return true
 	}
 	return false
-}
-
-type Message struct {
-	To       string `json:"to"`
-	Msg      string `json:"msg"`
-	ClientId string `json:"id"`
-}
-
-func (r *RoomKeysType) LogMessage(to string, from string, msg string, cid string) (id string, err error) {
-	u := uuid.NewV4().String()
-	bsonData := bson.M{
-		"id":  u,
-		"to":  to,
-		"msg": msg,
-		"cid": cid,
-	}
-	key := "msg:" + u
-	r.redisCli.Set(key, bsonData, time.Hour*24)
-	mongo.MessageCollection.InsertOne(mongo.Ctx, bsonData)
-	return u, nil
 }

@@ -7,28 +7,34 @@ import (
 	"github.com/gwuhaolin/livego/lib"
 	"github.com/gwuhaolin/livego/mongo"
 	"github.com/gwuhaolin/livego/protocol/socketio"
-	"github.com/gwuhaolin/livego/routes"
 )
 
 func StartKamaiiTV() {
 	go listen()
 }
 
+type RequestUser struct {
+	ID       string
+	Username string
+}
+
 func listen() {
 	go mongo.Connect(configure.Config.GetString("mongo_addr"))
-	routes.CompileRegexp()
+	CompileRegexp()
 	lib.GetSecret()
 	server := gin.New()
 	go socketio.Start(configure.Config.GetString("redis_addr"))
 	server.Use(static.Serve("/", static.LocalFile("./public", true)))
 	// Public APIs
-	server.POST("/api/v1/user/register", routes.RegisterUser)
-	server.POST("/api/v1/user/login", routes.LoginUser)
-	server.GET("/api/v1/channels/live", routes.GetLiveChannels)
-	server.GET("/api/v1/channel/live/:id", routes.GetLiveChannel)
+	server.POST("/api/v1/user/register", RegisterUser)
+	server.POST("/api/v1/user/login", LoginUser)
+	server.GET("/api/v1/channels/live", GetLiveChannels)
+	server.GET("/api/v1/channel/:id/live", GetLiveChannel)
+	server.GET("/api/v1/channel/:id/messages", GetChannelMessage)
 	// Authenticated Routes
-	server.Use(lib.TokenAuthMiddleware())
-	server.GET("/api/v1/user/streamkey", routes.GetStreamKey)
-	server.DELETE("/api/v1/user/streamkey/:key", routes.DeleteStreamKey)
+	server.Use(TokenAuthMiddleware())
+	server.POST("/api/v1/user/message", PostMessage)
+	server.GET("/api/v1/user/streamkey", GetStreamKey)
+	server.DELETE("/api/v1/user/streamkey/:key", DeleteStreamKey)
 	server.Run(":8080")
 }

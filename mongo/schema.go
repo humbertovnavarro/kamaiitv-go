@@ -20,11 +20,12 @@ type User struct {
 var MessageCollection = &mongo.Collection{}
 
 type Message struct {
-	ID       string `bson:"_id,omitempty"`
-	Username string `bson:"username,omitempty"`
-	Content  string `bson:"content,omitempty"`
-	Time     int64  `bson:"time,omitempty"`
-	Deleted  bool   `bson:"deleted,omitempty"`
+	ToRoom    string `json:"toRoom"`
+	FromId    string `json:"fromId"`
+	FromName  string `json:"fromName"`
+	Content   string `json:"content"`
+	CreatedAt int64  `json:"createdAt"`
+	Deleted   bool   `json:"deleted"`
 }
 
 var NodeCollection = &mongo.Collection{}

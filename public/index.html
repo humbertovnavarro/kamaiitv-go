@@ -20,6 +20,7 @@
     </style>
   </head>
   <body>
+    <h1>THIS IS A TEST CLIENT, THIS WILL NOT REFLECT THE FINAL PRODUCT</h1>
     <ul id="messages"></ul>
     <form action="">
       <input id="m" autocomplete="off" /><button>Send</button>
@@ -27,7 +28,7 @@
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
-      var room = "global";
+      var room = "61f9c0c90502d53a07beabc6";
       var socket = io("http://localhost:8081");
       socket.on('connect', function() {
         socket.emit('join', room);
@@ -63,10 +64,21 @@
       socket.on('login:success', function(msg){
         $('#messages').append($('<li class="green">').text(msg));
       });
-      socket.on("join:success", rRoom => {
-        room = rRoom;
+      socket.on("join:success", room => {
         $('#messages').append($('<li class="green">').text(`joined ${room}`));
       })
+      socket.on("online", function(channel) {
+        console.log("Online:", channel);
+      });
+      socket.on("offline", function(channel) {
+        console.log("Offline:", channel);
+      });
+      socket.on("viewer", function(channel) {
+        console.log("viewer:", channel);
+      });
+      socket.on("leaver", function(channel) {
+        console.log("leaver:", channel);
+      });
     </script>
   </body>
 </html>

@@ -38,10 +38,10 @@ func GetLiveChannels(c *gin.Context) {
 
 func GetLiveChannel(c *gin.Context) {
 	channel := c.Param("id")
-	channel, err := configure.RoomKeys.GetLiveChannel(channel)
+	viewers, err := configure.RoomKeys.GetLiveChannel(channel)
 	if err != nil {
 		c.AbortWithStatusJSON(404, gin.H{"error": "not found"})
 		return
 	}
-	c.JSON(200, gin.H{"channel": channel, "error": "ok"})
+	c.JSON(200, gin.H{"viewers": viewers})
 }

@@ -82,7 +82,7 @@ func (r *RoomKeysType) DeleteStream(channel string) (err error) {
 }
 
 func (r *RoomKeysType) SetStream(channel string) (err error) {
-	r.redisCli.Set(channel+":stream", -1, 0)
+	r.redisCli.Set(channel+":stream", 0, 0)
 	return
 }
 

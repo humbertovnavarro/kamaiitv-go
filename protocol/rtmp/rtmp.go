@@ -14,6 +14,7 @@ import (
 	"github.com/gwuhaolin/livego/configure"
 	"github.com/gwuhaolin/livego/container/flv"
 	"github.com/gwuhaolin/livego/protocol/rtmp/core"
+	"github.com/gwuhaolin/livego/protocol/socketio"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -139,6 +140,7 @@ func (s *Server) handleConn(conn *core.Conn) error {
 			log.Error("CheckKey err: ", err)
 			return err
 		}
+		socketio.IO.BroadcastToRoom("/", channel+":public", "online", channel)
 		configure.RoomKeys.SetStream(channel)
 		connServer.PublishInfo.Name = channel
 		if pushlist, ret := configure.GetStaticPushUrlList(appname); ret && (pushlist != nil) {

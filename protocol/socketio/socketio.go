@@ -46,9 +46,10 @@ func Start(redisAddress string) {
 	IO = server
 
 	server.OnConnect("/", handleConnect)
-	server.OnEvent("/", "chat", handleChat)
 	server.OnEvent("/", "join", handleJoin)
 	server.OnEvent("/", "login", handleLogin)
+	server.OnEvent("/", "leave", handleLeave)
+	server.OnEvent("/", "leaveAll", handleLeaveAll)
 	go func() {
 		if err := server.Serve(); err != nil {
 			log.Fatalf("socketio listen error: %s\n", err)

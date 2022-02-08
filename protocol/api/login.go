@@ -1,7 +1,6 @@
-package routes
+package api
 
 import (
-	"context"
 	"strings"
 	"time"
 
@@ -40,7 +39,7 @@ func LoginUser(c *gin.Context) {
 	query := bson.M{"usernameLower": strings.ToLower(registration.Username)}
 	email := bson.M{"emailLower": strings.ToLower(registration.Email)}
 	var user = &mongo.User{}
-	mongo.UserCollection.FindOne(context.Background(), bson.M{
+	mongo.UserCollection.FindOne(c, bson.M{
 		"$or": bson.A{query, email},
 	}).Decode(&user)
 	if user == nil {

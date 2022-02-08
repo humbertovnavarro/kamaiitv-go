@@ -3,6 +3,10 @@
   <head>
     <title>Socket.IO chat</title>
     <style>
+      body {
+        background:rgb(0, 0, 0);
+        color: white;
+      }
       .red {
         color: red;
       }
@@ -11,12 +15,11 @@
       }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form { background: rgb(56, 56, 56); padding: 3px; position: fixed; bottom: 0; width: 100%; }
       form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
       form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
       #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages li { padding: 5px 10px; }
-      #messages li:nth-child(odd) { background: #eee; }
+      #messages li { padding: 5px 10px; border-radius: 10px; border: 1px solid #ccc;}
     </style>
   </head>
   <body>
@@ -27,27 +30,41 @@
     </form>
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-      var room = "61f9c0c90502d53a07beabc6";
+      var room = "6201d8ea37baac217c96ca0d";
+      axios.get(`/api/v1/channel/${room}/messages`).then(res => {
+        res.data.messages.forEach(msg => {
+          const message = `${msg.fromName}: ${msg.content}`;
+          $('#messages').append($('<li>').text(message));
+        })
+      });
       var socket = io("http://localhost:8081");
       socket.on('connect', function() {
         socket.emit('join', room);
       });
+      document.cookie = "token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQb3N0bWFuUnVudGltZS83LjI5LjAiLCJleHAiOjE2NDQ4OTMxMTgsImp0aSI6IjYyMDFkOGVhMzdiYWFjMjE3Yzk2Y2EwZCIsInN1YiI6ImNyaW1zb24ifQ.Sv92N6EXad-qNcYTKoeutdxSzuG4Ws7J-Uy7U2CN_y4"
       $('form').submit(function(){
         if($('#m').val() === "login") {
-          socket.emit("login", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQb3N0bWFuUnVudGltZS83LjI5LjAiLCJleHAiOjE2NDQ4ODUzNTAsImp0aSI6IjYxZjljMGM5MDUwMmQ1M2EwN2JlYWJjNiIsInN1YiI6ImVyd3Jld3J3ZXIifQ.hodE1lRlncag3Bjb7FuPZ2jfXg47NBvBcsV_bNh_B8c")
+          socket.emit("login", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQb3N0bWFuUnVudGltZS83LjI5LjAiLCJleHAiOjE2NDQ4OTMxMTgsImp0aSI6IjYyMDFkOGVhMzdiYWFjMjE3Yzk2Y2EwZCIsInN1YiI6ImNyaW1zb24ifQ.Sv92N6EXad-qNcYTKoeutdxSzuG4Ws7J-Uy7U2CN_y4")
           return false;
         }
         const resp = {
           toRoom: room,
           content: $('#m').val(),
         };
-        socket.emit('chat', resp);
+        axios.post('/api/v1/user/message', resp)
+          .then(function (response) {
+            console.log(response);
+          })
+          .catch(function (error) {
+            console.log(error);
+          });
         $('#m').val('');
         return false;
       });
-      socket.on('chat', function(msg){
-        if(msg.toRoom != room) {
+      socket.on('message', function(msg){
+        if(msg.toRoom != room + ":public") {
           console.error("Wrong room:", msg);
         } else {
           console.log("Got message:", msg);
@@ -55,7 +72,7 @@
         const message = `${msg.fromName}: ${msg.content}`;
         $('#messages').append($('<li>').text(message));
       });
-      socket.on('chat:error', function(msg){
+      socket.on('message:error', function(msg){
         $('#messages').append($('<li class="red">').text(msg));
       });
       socket.on('login:error', function(msg){
@@ -64,6 +81,9 @@
       socket.on('login:success', function(msg){
         $('#messages').append($('<li class="green">').text(msg));
       });
+      socket.on("join", user => {
+        $('#messages').append($('<li class="green">').text(`${user.name} joined`));
+      })
       socket.on("join:success", room => {
         $('#messages').append($('<li class="green">').text(`joined ${room}`));
       })

@@ -1,4 +1,4 @@
-package routes
+package lib
 
 import (
 	"time"
@@ -7,11 +7,6 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/gwuhaolin/livego/configure"
 )
-
-type AuthToken struct {
-	Issuer  string
-	Subject string
-}
 
 var secret []byte
 
@@ -23,13 +18,9 @@ func GetSecret() {
 	secret = []byte(secretString)
 }
 
-func signToken(token AuthToken) (string, error) {
-	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-		Issuer:    token.Issuer,
-		IssuedAt:  time.Now().Unix(),
-		Subject:   token.Subject,
-		ExpiresAt: time.Now().Add(time.Hour * 24 * 14).Unix(),
-	})
+func SignToken(token jwt.StandardClaims) (string, error) {
+	token.ExpiresAt = time.Now().Add(time.Hour * 24 * 7).Unix()
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, token)
 	return claims.SignedString(secret)
 }
 
@@ -60,6 +51,6 @@ func TokenAuthMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(401, gin.H{"error": "expired"})
 			return
 		}
-		c.Set("user", claims.Issuer)
+		c.Set("id", claims.Id)
 	}
 }

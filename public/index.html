@@ -3,6 +3,12 @@
   <head>
     <title>Socket.IO chat</title>
     <style>
+      .red {
+        color: red;
+      }
+      .green {
+        color: green;
+      }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font: 13px Helvetica, Arial; }
       form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
@@ -21,15 +27,46 @@
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
+      var room = "global";
       var socket = io("http://localhost:8081");
+      socket.on('connect', function() {
+        socket.emit('join', room);
+      });
       $('form').submit(function(){
-        socket.emit('message', $('#m').val());
+        if($('#m').val() === "login") {
+          socket.emit("login", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQb3N0bWFuUnVudGltZS83LjI5LjAiLCJleHAiOjE2NDQ4ODUzNTAsImp0aSI6IjYxZjljMGM5MDUwMmQ1M2EwN2JlYWJjNiIsInN1YiI6ImVyd3Jld3J3ZXIifQ.hodE1lRlncag3Bjb7FuPZ2jfXg47NBvBcsV_bNh_B8c")
+          return false;
+        }
+        const resp = {
+          toRoom: room,
+          content: $('#m').val(),
+        };
+        socket.emit('chat', resp);
         $('#m').val('');
         return false;
       });
-      setInterval(() => {
-          socket.emit('message', 'ping');
-      }, 500)
+      socket.on('chat', function(msg){
+        if(msg.toRoom != room) {
+          console.error("Wrong room:", msg);
+        } else {
+          console.log("Got message:", msg);
+        }
+        const message = `${msg.fromName}: ${msg.content}`;
+        $('#messages').append($('<li>').text(message));
+      });
+      socket.on('chat:error', function(msg){
+        $('#messages').append($('<li class="red">').text(msg));
+      });
+      socket.on('login:error', function(msg){
+        $('#messages').append($('<li class="red">').text(msg));
+      });
+      socket.on('login:success', function(msg){
+        $('#messages').append($('<li class="green">').text(msg));
+      });
+      socket.on("join:success", rRoom => {
+        room = rRoom;
+        $('#messages').append($('<li class="green">').text(`joined ${room}`));
+      })
     </script>
   </body>
 </html>

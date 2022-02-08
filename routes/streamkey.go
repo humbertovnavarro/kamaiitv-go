@@ -6,12 +6,12 @@ import (
 )
 
 func GetStreamKey(c *gin.Context) {
-	user := c.GetString("user")
-	if user == "" {
+	id := c.GetString("id")
+	if id == "" {
 		c.AbortWithStatusJSON(500, gin.H{"error": "internal error"})
 		return
 	}
-	key, err := configure.RoomKeys.GetKey(user)
+	key, err := configure.RoomKeys.GetKey(id)
 	if err != nil {
 		c.AbortWithStatusJSON(500, gin.H{"error": "internal error"})
 		return

@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt"
+	"github.com/gwuhaolin/livego/lib"
 	"github.com/gwuhaolin/livego/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
@@ -42,20 +44,25 @@ func LoginUser(c *gin.Context) {
 		"$or": bson.A{query, email},
 	}).Decode(&user)
 	if user == nil {
-		c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized1"})
+		c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized"})
+		return
+	}
+	if user.Status == "unverified" {
+		c.AbortWithStatusJSON(401, gin.H{"error": "unverified"})
 		return
 	}
 	userPassword := []byte(user.Password)
 	dbPassword := []byte(registration.Password)
 	if err := bcrypt.CompareHashAndPassword(userPassword, dbPassword); err != nil {
-		c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized2"})
+		c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized"})
 		return
 	}
-	tkStrct := AuthToken{
-		Issuer:  user.ID,
-		Subject: c.Request.UserAgent(),
+	tkStrct := jwt.StandardClaims{
+		Id:       user.ID,
+		Subject:  user.Username,
+		Audience: c.Request.UserAgent(),
 	}
-	token, err := signToken(tkStrct)
+	token, err := lib.SignToken(tkStrct)
 	if err != nil {
 		c.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
 		return

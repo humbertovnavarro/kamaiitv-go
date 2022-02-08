@@ -4,6 +4,7 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/gwuhaolin/livego/configure"
+	"github.com/gwuhaolin/livego/lib"
 	"github.com/gwuhaolin/livego/mongo"
 	"github.com/gwuhaolin/livego/protocol/socketio"
 	"github.com/gwuhaolin/livego/routes"
@@ -14,9 +15,9 @@ func StartKamaiiTV() {
 }
 
 func listen() {
-	mongo.Connect(configure.Config.GetString("mongo_addr"))
+	go mongo.Connect(configure.Config.GetString("mongo_addr"))
 	routes.CompileRegexp()
-	routes.GetSecret()
+	lib.GetSecret()
 	server := gin.New()
 	go socketio.Start(configure.Config.GetString("redis_addr"))
 	server.Use(static.Serve("/", static.LocalFile("./public", true)))
@@ -26,7 +27,7 @@ func listen() {
 	server.GET("/api/v1/channels/live", routes.GetLiveChannels)
 	server.GET("/api/v1/channel/live/:id", routes.GetLiveChannel)
 	// Authenticated Routes
-	server.Use(routes.TokenAuthMiddleware())
+	server.Use(lib.TokenAuthMiddleware())
 	server.GET("/api/v1/user/streamkey", routes.GetStreamKey)
 	server.DELETE("/api/v1/user/streamkey/:key", routes.DeleteStreamKey)
 	server.Run(":8080")

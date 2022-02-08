@@ -1,8 +1,9 @@
 package socketio
 
 import (
-	"log"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	socketio "github.com/googollee/go-socket.io"
 	"github.com/googollee/go-socket.io/engineio"
@@ -17,7 +18,13 @@ var allowOriginFunc = func(r *http.Request) bool {
 
 var IO = &socketio.Server{}
 
+type SocketContext struct {
+	Id       string
+	Username string
+}
+
 func Start(redisAddress string) {
+	// Cors
 	server := socketio.NewServer(&engineio.Options{
 		Transports: []transport.Transport{
 			&polling.Transport{
@@ -28,7 +35,7 @@ func Start(redisAddress string) {
 			},
 		},
 	})
-	IO = server
+	// Redis Cluster
 	_, err := server.Adapter(&socketio.RedisAdapterOptions{
 		Addr:    redisAddress,
 		Network: "tcp",
@@ -36,27 +43,20 @@ func Start(redisAddress string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	IO = server
 
-	server.OnConnect("/", func(s socketio.Conn) error {
-		authenticateSocket(s)
-		return nil
-	})
-
-	server.OnEvent("/", "chat", func(s socketio.Conn, msg string) {
-		handleChat(s, msg)
-	})
-
+	server.OnConnect("/", handleConnect)
+	server.OnEvent("/", "chat", handleChat)
+	server.OnEvent("/", "join", handleJoin)
+	server.OnEvent("/", "login", handleLogin)
 	go func() {
 		if err := server.Serve(); err != nil {
 			log.Fatalf("socketio listen error: %s\n", err)
 		}
 	}()
+
 	defer server.Close()
 	http.Handle("/socket.io/", server)
 	log.Println("Serving at localhost:8081...")
 	log.Fatal(http.ListenAndServe(":8081", nil))
-}
-
-func authenticateSocket(socketio.Conn) string {
-	return "1234"
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/gwuhaolin/livego/configure"
 	"github.com/gwuhaolin/livego/protocol/rtmp/cache"
 	"github.com/gwuhaolin/livego/protocol/rtmp/rtmprelay"
+	"github.com/gwuhaolin/livego/protocol/socketio"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -57,7 +58,9 @@ func (rs *RtmpStream) HandleReader(r av.ReadCloser) {
 func (rs *RtmpStream) HandleWriter(w av.WriteCloser) {
 	info := w.Info()
 	log.Debugf("HandleWriter: info[%v]", info)
-	configure.RoomKeys.AddViewer(info.Key[5:])
+	channel := info.Key[5:]
+	socketio.IO.BroadcastToRoom("/", channel+":public", "viewer", channel)
+	configure.RoomKeys.AddViewer(channel)
 	var s *Stream
 	item, ok := rs.streams.Load(info.Key)
 	if !ok {
@@ -349,7 +352,9 @@ func (s *Stream) TransStart() {
 				//log.Debugf("w.Write: type=%v, %v", writeType, v.w.Info())
 				if err = v.w.Write(&newPacket); err != nil {
 					log.Debugf("[%s] write packet error: %v, remove", v.w.Info(), err)
-					configure.RoomKeys.SubtractViewer(v.w.Info().Key[5:])
+					channel := v.w.Info().Key[5:]
+					configure.RoomKeys.SubtractViewer(channel)
+					socketio.IO.BroadcastToRoom("/", channel+":public", "leaver", channel)
 					s.ws.Delete(key)
 				}
 			}
@@ -399,7 +404,9 @@ func (s *Stream) closeInter() {
 	if s.r != nil {
 		s.StopStaticPush()
 		log.Debugf("[%v] publisher closed", s.r.Info())
-		configure.RoomKeys.DeleteStream(s.r.Info().Key[5:])
+		channel := s.r.Info().Key[5:]
+		socketio.IO.BroadcastToRoom("/", channel+":public", "offline", channel)
+		configure.RoomKeys.DeleteStream(channel)
 	}
 
 	s.ws.Range(func(key, val interface{}) bool {

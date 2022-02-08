@@ -3,12 +3,15 @@ package configure
 import (
 	"fmt"
 	"strconv"
-
-	"github.com/gwuhaolin/livego/utils/uid"
+	"time"
 
 	"github.com/go-redis/redis/v7"
+	"github.com/gwuhaolin/livego/mongo"
+	"github.com/gwuhaolin/livego/utils/uid"
 	"github.com/patrickmn/go-cache"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type RoomKeysType struct {
@@ -27,7 +30,6 @@ func Init() {
 	if saveInLocal {
 		return
 	}
-
 	RoomKeys.redisCli = redis.NewClient(&redis.Options{
 		Addr:     Config.GetString("redis_addr"),
 		Password: Config.GetString("redis_pwd"),
@@ -80,7 +82,7 @@ func (r *RoomKeysType) DeleteStream(channel string) (err error) {
 }
 
 func (r *RoomKeysType) SetStream(channel string) (err error) {
-	r.redisCli.Set(channel+":stream", -1, 0)
+	r.redisCli.Set(channel+":stream", 0, 0)
 	return
 }
 
@@ -133,6 +135,14 @@ func (r *RoomKeysType) GetKey(channel string) (newKey string, err error) {
 	return
 }
 
+func (r *RoomKeysType) GetAllLiveChannels(s uint64, e uint64) (keys []string, cursor uint64, err error) {
+	return r.redisCli.Scan(s, "*:stream", int64(e)).Result()
+}
+
+func (r *RoomKeysType) GetLiveChannel(id string) (channel string, err error) {
+	return r.redisCli.Get(id + ":stream").Result()
+}
+
 func (r *RoomKeysType) GetChannel(key string) (channel string, err error) {
 	if !saveInLocal {
 		return r.redisCli.Get("key:" + key).Result()
@@ -148,7 +158,7 @@ func (r *RoomKeysType) GetChannel(key string) (channel string, err error) {
 
 func (r *RoomKeysType) DeleteChannel(channel string) bool {
 	if !saveInLocal {
-		return r.redisCli.Del(channel+":key").Err() != nil
+		return r.redisCli.Del(channel+"*").Err() != nil
 	}
 
 	key, ok := r.localCache.Get(channel)
@@ -172,4 +182,24 @@ func (r *RoomKeysType) DeleteKey(key string) bool {
 		return true
 	}
 	return false
+}
+
+type Message struct {
+	To       string `json:"to"`
+	Msg      string `json:"msg"`
+	ClientId string `json:"id"`
+}
+
+func (r *RoomKeysType) LogMessage(to string, from string, msg string, cid string) (id string, err error) {
+	u := uuid.NewV4().String()
+	bsonData := bson.M{
+		"id":  u,
+		"to":  to,
+		"msg": msg,
+		"cid": cid,
+	}
+	key := "msg:" + u
+	r.redisCli.Set(key, bsonData, time.Hour*24)
+	mongo.MessageCollection.InsertOne(mongo.Ctx, bsonData)
+	return u, nil
 }

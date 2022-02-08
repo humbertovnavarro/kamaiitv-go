@@ -1,22 +1,25 @@
-package api
+package routes
 
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt"
+	"github.com/gwuhaolin/livego/lib"
 	"github.com/gwuhaolin/livego/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UserRegistration struct {
+type UserLogin struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Email    string `json:"email"`
 }
 
-func RegisterUser(c *gin.Context) {
+func LoginUser(c *gin.Context) {
 	registration := UserRegistration{}
 	if err := c.BindJSON(&registration); err != nil {
 		c.AbortWithStatusJSON(400, gin.H{"error": "json syntax error"})
@@ -30,30 +33,40 @@ func RegisterUser(c *gin.Context) {
 		c.AbortWithStatusJSON(400, gin.H{"error": "valid password is required"})
 		return
 	}
-	if registration.Username == "" || !IsValidPassword.MatchString(registration.Password) {
+	if registration.Username == "" || !IsValidPassword.MatchString(registration.Username) {
 		c.AbortWithStatusJSON(400, gin.H{"error": "valid username is required"})
 		return
 	}
 	query := bson.M{"usernameLower": strings.ToLower(registration.Username)}
 	email := bson.M{"emailLower": strings.ToLower(registration.Email)}
-	var user bson.M
+	var user = &mongo.User{}
 	mongo.UserCollection.FindOne(context.Background(), bson.M{
 		"$or": bson.A{query, email},
 	}).Decode(&user)
-	if user != nil {
-		c.AbortWithStatusJSON(400, gin.H{"error": "username or email already exists"})
+	if user == nil {
+		c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized"})
 		return
 	}
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(registration.Password), bcrypt.DefaultCost)
+	if user.Status == "unverified" {
+		c.AbortWithStatusJSON(401, gin.H{"error": "unverified"})
+		return
+	}
+	userPassword := []byte(user.Password)
+	dbPassword := []byte(registration.Password)
+	if err := bcrypt.CompareHashAndPassword(userPassword, dbPassword); err != nil {
+		c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized"})
+		return
+	}
+	tkStrct := jwt.StandardClaims{
+		Id:       user.ID,
+		Subject:  user.Username,
+		Audience: c.Request.UserAgent(),
+	}
+	token, err := lib.SignToken(tkStrct)
 	if err != nil {
 		c.AbortWithStatusJSON(500, gin.H{"error": "internal server error"})
 		return
 	}
-	mongo.UserCollection.InsertOne(c, &mongo.User{
-		Username:      registration.Username,
-		UsernameLower: strings.ToLower(registration.Username),
-		Password:      string(hashedPassword),
-		Email:         registration.Email,
-	})
-	c.JSON(200, gin.H{"error": "ok"})
+	c.SetCookie("token", token, int(time.Hour*24*14), "", "", false, true)
+	c.JSON(200, gin.H{"token": token})
 }

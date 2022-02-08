@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      .red {
+        color: red;
+      }
+      .green {
+        color: green;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+    </style>
+  </head>
+  <body>
+    <h1>THIS IS A TEST CLIENT, THIS WILL NOT REFLECT THE FINAL PRODUCT</h1>
+    <ul id="messages"></ul>
+    <form action="">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+      var room = "61f9c0c90502d53a07beabc6";
+      var socket = io("http://localhost:8081");
+      socket.on('connect', function() {
+        socket.emit('join', room);
+      });
+      $('form').submit(function(){
+        if($('#m').val() === "login") {
+          socket.emit("login", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQb3N0bWFuUnVudGltZS83LjI5LjAiLCJleHAiOjE2NDQ4ODUzNTAsImp0aSI6IjYxZjljMGM5MDUwMmQ1M2EwN2JlYWJjNiIsInN1YiI6ImVyd3Jld3J3ZXIifQ.hodE1lRlncag3Bjb7FuPZ2jfXg47NBvBcsV_bNh_B8c")
+          return false;
+        }
+        const resp = {
+          toRoom: room,
+          content: $('#m').val(),
+        };
+        socket.emit('chat', resp);
+        $('#m').val('');
+        return false;
+      });
+      socket.on('chat', function(msg){
+        if(msg.toRoom != room) {
+          console.error("Wrong room:", msg);
+        } else {
+          console.log("Got message:", msg);
+        }
+        const message = `${msg.fromName}: ${msg.content}`;
+        $('#messages').append($('<li>').text(message));
+      });
+      socket.on('chat:error', function(msg){
+        $('#messages').append($('<li class="red">').text(msg));
+      });
+      socket.on('login:error', function(msg){
+        $('#messages').append($('<li class="red">').text(msg));
+      });
+      socket.on('login:success', function(msg){
+        $('#messages').append($('<li class="green">').text(msg));
+      });
+      socket.on("join:success", room => {
+        $('#messages').append($('<li class="green">').text(`joined ${room}`));
+      })
+      socket.on("online", function(channel) {
+        console.log("Online:", channel);
+      });
+      socket.on("offline", function(channel) {
+        console.log("Offline:", channel);
+      });
+      socket.on("viewer", function(channel) {
+        console.log("viewer:", channel);
+      });
+      socket.on("leaver", function(channel) {
+        console.log("leaver:", channel);
+      });
+    </script>
+  </body>
+</html>

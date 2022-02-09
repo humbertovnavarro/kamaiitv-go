@@ -28,11 +28,11 @@ func LoginUser(c *gin.Context) {
 		c.AbortWithStatusJSON(400, gin.H{"error": "valid email is required"})
 		return
 	}
-	if registration.Password == "" || !lib.IsValidPassword.MatchString(registration.Password) {
+	if registration.Password == "" {
 		c.AbortWithStatusJSON(400, gin.H{"error": "valid password is required"})
 		return
 	}
-	if registration.Username == "" || !lib.IsValidPassword.MatchString(registration.Username) {
+	if registration.Username == "" {
 		c.AbortWithStatusJSON(400, gin.H{"error": "valid username is required"})
 		return
 	}
@@ -43,18 +43,18 @@ func LoginUser(c *gin.Context) {
 		"$or": bson.A{query, email},
 	})
 	if found.Err() != nil {
-		c.AbortWithStatusJSON(400, gin.H{"error": "username or email not found"})
+		c.AbortWithStatusJSON(400, gin.H{"error": "Please check your username or password"})
 		return
 	}
 	found.Decode(&user)
 	if user.Status == "unverified" {
-		c.AbortWithStatusJSON(401, gin.H{"error": "unverified"})
+		c.AbortWithStatusJSON(401, gin.H{"error": "Your account is not verified yet"})
 		return
 	}
 	userPassword := []byte(user.Password)
 	dbPassword := []byte(registration.Password)
 	if err := bcrypt.CompareHashAndPassword(userPassword, dbPassword); err != nil {
-		c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized"})
+		c.AbortWithStatusJSON(401, gin.H{"error": "Please check your username or password"})
 		return
 	}
 	tkStrct := jwt.StandardClaims{

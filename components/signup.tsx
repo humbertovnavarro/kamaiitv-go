@@ -7,14 +7,21 @@ import Link from '@nextui-org/react/Link';
 import Row from '@nextui-org/react/Row';
 import React from 'react';
 import axios from "axios";
-interface LoginProps {
+import { checkPassStrength, scorePassword } from '../lib/passwords';
+import { Progress } from '@nextui-org/react';
+interface SignupProps {
   visible: boolean;
 }
-const Login = (props: LoginProps) => {
+const Signup = (props: SignupProps) => {
 type FormStatus = "default" | "primary" | "secondary" | "success" | "warning" | "error"
 const [status, setStatus] = React.useState<FormStatus>('default');
 const [email, setEmail] = React.useState('');
 const [password, setPassword] = React.useState('');
+const [passwordStrength, setPasswordStrength] = React.useState(null);
+const [passwordScore, setPasswordScore] = React.useState(0);
+// defuault is how its defined in the definition file ¯\_(ツ)_/¯
+type colors = "primary" | "secondary" | "success" | "warning" | "error" | "gradient" | "defuault"
+const [progressColor, setProgressColor] = React.useState<colors>('primary');
 const [remember, setRemember] = React.useState(false);
 const [open, setOpen] = React.useState(props.visible);
 const [error, setError] = React.useState('');
@@ -55,12 +62,12 @@ const signInHandler = async () => {
 return (
     <Modal
         closeButton
-        aria-labelledby="Login form"
+        aria-labelledby="Signup form"
         open={open}
     >
         <Modal.Header>
             <Text size={18} className="mx-1">
-              Login
+              Signup
             </Text>
         </Modal.Header>
         <Modal.Body>
@@ -88,6 +95,12 @@ return (
                 size="lg"
                 placeholder="Email or Username"
             />
+              <Text>
+                {passwordStrength}
+              </Text>
+              {
+                password &&  <Progress value={passwordScore} size="xs" color={progressColor}/>
+              }
             <Input.Password
                 status={status}
                 onClick={() => {
@@ -97,7 +110,11 @@ return (
                     setEmail('')
                   }
                 }}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setPasswordStrength(checkPassStrength(e.target.value));
+                  setPasswordScore(scorePassword(e.target.value));
+                }}
                 value={password}
                 required
                 clearable
@@ -137,4 +154,4 @@ return (
     </Modal>
 );
 };
-export default Login;
+export default Signup;

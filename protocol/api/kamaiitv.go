@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/gwuhaolin/livego/configure"
 	"github.com/gwuhaolin/livego/lib"
@@ -25,19 +24,19 @@ func listen() {
 	go socketio.Start(configure.Config.GetString("redis_addr"))
 	server := gin.New()
 	defer server.Run(":8080")
-	server.Use(static.Serve("/", static.LocalFile("./out", true)))
+	// HTTP Proxy NextJS
+	// Authenticated Routes
+	authenticated := TokenAuthMiddleware()
+	server.POST("/api/v1/channel/:id/follow", FollowChannel, authenticated)
+	server.POST("/api/v1/user/message", PostMessage, authenticated)
+	server.GET("/api/v1/user/streamkey", GetStreamKey, authenticated)
+	server.GET("/api/v1/user/following", GetFollowing, authenticated)
+	server.DELETE("/api/v1/user/streamkey/:key", DeleteStreamKey, authenticated)
 	// Public APIs
 	server.POST("/api/v1/user/register", RegisterUser)
 	server.POST("/api/v1/user/login", LoginUser)
 	server.GET("/api/v1/channels/live", GetLiveChannels)
 	server.GET("/api/v1/channel/:id/live", GetLiveChannel)
 	server.GET("/api/v1/channel/:id/messages", GetChannelMessage)
-	// Authenticated Routes
-	server.Use(TokenAuthMiddleware())
-	server.POST("/api/v1/channel/:id/follow", FollowChannel)
-	server.POST("/api/v1/user/message", PostMessage)
-	server.GET("/api/v1/user/streamkey", GetStreamKey)
-	server.GET("/api/v1/user/following", GetFollowing)
-	server.DELETE("/api/v1/user/streamkey/:key", DeleteStreamKey)
-	server.Use(FourOFourMiddleware())
+	server.Use(ReverseProxy("http://localhost:3000"))
 }

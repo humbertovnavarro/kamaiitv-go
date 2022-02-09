@@ -1,22 +1,33 @@
-import "../styles/globals.css"
+// import "../styles/globals.css"
 import * as React from 'react';
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { createTheme, NextUIProvider } from "@nextui-org/react"
-import useDarkMode from 'use-dark-mode';
-const lightTheme = createTheme({
-  type: 'light',
-})
-
 const darkTheme = createTheme({
-  type: 'dark',
-})
+  type: "dark",
+  theme: {
+    colors: {
+      background: "#1a1a1a",
+    }
+  }
+});
+const lightTheme = createTheme({
+  type: "light"
+});
 
 function App({ Component }) {
-const darkMode = useDarkMode(true);
-const [loginPrompt, setLoginPrompt] = React.useState(false);
   return (
-    <NextUIProvider theme={darkMode.value ? darkTheme : lightTheme}>
+  <NextThemesProvider
+      defaultTheme="system"
+      attribute="class"
+      value={{
+        light: lightTheme.className,
+        dark: darkTheme.className
+      }}
+    >
+    <NextUIProvider>
         <Component />
     </NextUIProvider>
+    </NextThemesProvider>
   );
 }
 export default App;

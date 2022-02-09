@@ -1,6 +1,9 @@
 package api
 
 import (
+	"log"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"time"
 
@@ -44,6 +47,23 @@ func FourOFourMiddleware() gin.HandlerFunc {
 			return
 		}
 		c.Data(404, "text/html", dat)
+		c.Next()
+	}
+}
+
+func ReverseProxy(target string) gin.HandlerFunc {
+	url, err := url.Parse(target)
+	if err != nil {
+		log.Fatal("No url provided when calling ReverseProxy")
+	}
+	proxy := httputil.NewSingleHostReverseProxy(url)
+	return func(c *gin.Context) {
+		if len(c.Request.URL.Path) > 4 && c.Request.URL.Path[:4] == "/api" {
+			c.Next()
+			return
+		}
+		c.Abort()
+		proxy.ServeHTTP(c.Writer, c.Request)
 		c.Next()
 	}
 }

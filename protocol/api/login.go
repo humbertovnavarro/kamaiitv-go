@@ -28,24 +28,25 @@ func LoginUser(c *gin.Context) {
 		c.AbortWithStatusJSON(400, gin.H{"error": "valid email is required"})
 		return
 	}
-	if registration.Password == "" || !IsValidPassword.MatchString(registration.Password) {
+	if registration.Password == "" || !lib.IsValidPassword.MatchString(registration.Password) {
 		c.AbortWithStatusJSON(400, gin.H{"error": "valid password is required"})
 		return
 	}
-	if registration.Username == "" || !IsValidPassword.MatchString(registration.Username) {
+	if registration.Username == "" || !lib.IsValidPassword.MatchString(registration.Username) {
 		c.AbortWithStatusJSON(400, gin.H{"error": "valid username is required"})
 		return
 	}
 	query := bson.M{"usernameLower": strings.ToLower(registration.Username)}
 	email := bson.M{"emailLower": strings.ToLower(registration.Email)}
 	var user = &mongo.User{}
-	mongo.UserCollection.FindOne(c, bson.M{
+	found := mongo.UserCollection.FindOne(c, bson.M{
 		"$or": bson.A{query, email},
-	}).Decode(&user)
-	if user == nil {
-		c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized"})
+	})
+	if found.Err() != nil {
+		c.AbortWithStatusJSON(400, gin.H{"error": "username or email not found"})
 		return
 	}
+	found.Decode(&user)
 	if user.Status == "unverified" {
 		c.AbortWithStatusJSON(401, gin.H{"error": "unverified"})
 		return

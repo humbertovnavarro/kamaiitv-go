@@ -2,12 +2,11 @@ package api
 
 import (
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gwuhaolin/livego/configure"
+	"github.com/gwuhaolin/livego/lib"
 	"github.com/gwuhaolin/livego/mongo"
-	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -23,7 +22,7 @@ func GetLiveChannels(c *gin.Context) {
 		}
 		startNum = newStartNum
 	}
-	endNum := startNum + 100
+	endNum := startNum + 50
 	keys, newCursor, err := configure.RoomKeys.GetAllLiveChannels(startNum, endNum)
 	if newCursor <= startNum && startNum != 0 {
 		c.AbortWithStatus(204)
@@ -52,28 +51,61 @@ func GetLiveChannel(c *gin.Context) {
 }
 
 func GetChannelMessage(c *gin.Context) {
-	oldest := time.Now().Unix() - int64(time.Hour)*24
 	channel := c.Param("id")
+	page := c.Query("page")
+	if page == "" {
+		page = "0"
+	}
+	pageNum, err := strconv.Atoi(page)
+	if err != nil {
+		c.AbortWithStatusJSON(400, gin.H{"error": "bad request"})
+		return
+	}
 	filter := bson.M{
-		"createdAt": bson.M{
-			"$gt": oldest,
-		},
 		"toRoom": channel + ":public",
 	}
 	findOpts := options.Find()
 	findOpts.SetSort(bson.M{"createdAt": 1})
+	findOpts.SetLimit(50)
+	findOpts.SetSkip(int64(pageNum) * 50)
 	query, err := mongo.MessageCollection.Find(c, filter, findOpts)
 	if err != nil {
-		log.Errorf("GetChannelMessage find error: %v", err)
 		c.AbortWithStatusJSON(500, gin.H{"error": "internal error"})
 		return
 	}
 	results := &[]mongo.Message{}
 	err = query.All(c, results)
 	if err != nil {
-		log.Errorf("GetChannelMessage find error: %v", err)
 		c.AbortWithStatusJSON(500, gin.H{"error": "internal error"})
 		return
 	}
 	c.JSON(200, gin.H{"messages": results})
+}
+
+func FollowChannel(c *gin.Context) {
+	channel := c.Param("id")
+	context := c.MustGet("user").(*RequestUser)
+	if channel == "" {
+		c.AbortWithStatusJSON(400, gin.H{"error": "bad request"})
+		return
+	}
+	if !lib.IsValidObjectID.MatchString(channel) {
+		c.AbortWithStatusJSON(400, gin.H{"error": "bad request"})
+		return
+	}
+	if context.ID == channel {
+		c.AbortWithStatusJSON(400, gin.H{"error": "can not follow/unfollow yourself"})
+		return
+	}
+	filter := bson.M{
+		"follower": context.ID,
+		"channel":  channel,
+	}
+	result := mongo.FollowerCollection.FindOneAndDelete(c, filter)
+	if result.Err() == nil {
+		c.JSON(200, gin.H{"error": "deleted"})
+		return
+	}
+	mongo.FollowerCollection.InsertOne(c, filter)
+	c.JSON(200, gin.H{"error": "ok"})
 }

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -28,5 +29,21 @@ func TokenAuthMiddleware() gin.HandlerFunc {
 			Username: claims.Subject,
 		}
 		c.Set("user", context)
+		c.Next()
+	}
+}
+
+func FourOFourMiddleware() gin.HandlerFunc {
+	dat, err := os.ReadFile("./public/404.html")
+	if err != nil {
+		panic(err)
+	}
+	return func(c *gin.Context) {
+		if err != nil {
+			c.AbortWithStatusJSON(500, gin.H{"error": "internal error"})
+			return
+		}
+		c.Data(404, "text/html", dat)
+		c.Next()
 	}
 }

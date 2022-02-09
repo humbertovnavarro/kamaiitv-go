@@ -43,10 +43,11 @@
       socket.on('connect', function() {
         socket.emit('join', room);
       });
-      document.cookie = "token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQb3N0bWFuUnVudGltZS83LjI5LjAiLCJleHAiOjE2NDQ4OTMxMTgsImp0aSI6IjYyMDFkOGVhMzdiYWFjMjE3Yzk2Y2EwZCIsInN1YiI6ImNyaW1zb24ifQ.Sv92N6EXad-qNcYTKoeutdxSzuG4Ws7J-Uy7U2CN_y4"
+      const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQb3N0bWFuUnVudGltZS83LjI5LjAiLCJleHAiOjE2NDQ5Njc5MDYsImp0aSI6IjYyMDFkOGVhMzdiYWFjMjE3Yzk2Y2EwZCIsInN1YiI6ImNyaW1zb24ifQ.aZGSKpYIRN0NYyVSZjIfj64HC6B7XElmozjbzJKGbxQ"
+      document.cookie = `token=${token}`;
       $('form').submit(function(){
         if($('#m').val() === "login") {
-          socket.emit("login", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJQb3N0bWFuUnVudGltZS83LjI5LjAiLCJleHAiOjE2NDQ4OTMxMTgsImp0aSI6IjYyMDFkOGVhMzdiYWFjMjE3Yzk2Y2EwZCIsInN1YiI6ImNyaW1zb24ifQ.Sv92N6EXad-qNcYTKoeutdxSzuG4Ws7J-Uy7U2CN_y4")
+          socket.emit("login", token)
           return false;
         }
         const resp = {

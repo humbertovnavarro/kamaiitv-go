@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gwuhaolin/livego/lib"
 	"github.com/gwuhaolin/livego/mongo"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
@@ -26,11 +27,11 @@ func RegisterUser(c *gin.Context) {
 		c.AbortWithStatusJSON(400, gin.H{"error": "valid email is required"})
 		return
 	}
-	if registration.Password == "" || !IsValidPassword.MatchString(registration.Password) {
+	if registration.Password == "" || !lib.IsValidPassword.MatchString(registration.Password) {
 		c.AbortWithStatusJSON(400, gin.H{"error": "valid password is required"})
 		return
 	}
-	if registration.Username == "" || !IsValidPassword.MatchString(registration.Username) {
+	if registration.Username == "" || !lib.IsValidPassword.MatchString(registration.Username) {
 		c.AbortWithStatusJSON(400, gin.H{"error": "valid username is required"})
 		return
 	}

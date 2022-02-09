@@ -19,11 +19,12 @@ type RequestUser struct {
 }
 
 func listen() {
-	go mongo.Connect(configure.Config.GetString("mongo_addr"))
-	CompileRegexp()
+	lib.CompileRegexp()
 	lib.GetSecret()
-	server := gin.New()
+	go mongo.Connect(configure.Config.GetString("mongo_addr"))
 	go socketio.Start(configure.Config.GetString("redis_addr"))
+	server := gin.New()
+	defer server.Run(":8080")
 	server.Use(static.Serve("/", static.LocalFile("./public", true)))
 	// Public APIs
 	server.POST("/api/v1/user/register", RegisterUser)
@@ -33,8 +34,10 @@ func listen() {
 	server.GET("/api/v1/channel/:id/messages", GetChannelMessage)
 	// Authenticated Routes
 	server.Use(TokenAuthMiddleware())
+	server.POST("/api/v1/channel/:id/follow", FollowChannel)
 	server.POST("/api/v1/user/message", PostMessage)
 	server.GET("/api/v1/user/streamkey", GetStreamKey)
+	server.GET("/api/v1/user/following", GetFollowing)
 	server.DELETE("/api/v1/user/streamkey/:key", DeleteStreamKey)
-	server.Run(":8080")
+	server.Use(FourOFourMiddleware())
 }

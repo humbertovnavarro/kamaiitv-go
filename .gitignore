@@ -7,3 +7,7 @@ vendor
 livego
 livego.exe
 livego.yaml
+node_modules
+.next
+out
+yarn.lock

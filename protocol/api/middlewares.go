@@ -34,7 +34,7 @@ func TokenAuthMiddleware() gin.HandlerFunc {
 }
 
 func FourOFourMiddleware() gin.HandlerFunc {
-	dat, err := os.ReadFile("./public/404.html")
+	dat, err := os.ReadFile("./out/404.html")
 	if err != nil {
 		panic(err)
 	}

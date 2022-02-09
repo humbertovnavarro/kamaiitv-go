@@ -25,7 +25,7 @@ func listen() {
 	go socketio.Start(configure.Config.GetString("redis_addr"))
 	server := gin.New()
 	defer server.Run(":8080")
-	server.Use(static.Serve("/", static.LocalFile("./public", true)))
+	server.Use(static.Serve("/", static.LocalFile("./out", true)))
 	// Public APIs
 	server.POST("/api/v1/user/register", RegisterUser)
 	server.POST("/api/v1/user/login", LoginUser)

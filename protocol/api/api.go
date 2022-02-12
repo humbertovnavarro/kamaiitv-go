@@ -204,7 +204,7 @@ func (server *Server) GetLiveStatics(w http.ResponseWriter, req *http.Request) {
 	} else {
 		// Warning: The room should be in the "live/stream" format!
 		roomInfo, exists := (rtmpStream.GetStreams()).Load(room)
-		if exists == false {
+		if !exists {
 			res.Status = 404
 			res.Data = "room not found or inactive"
 			return

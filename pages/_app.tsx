@@ -1,33 +1,9 @@
-// import "../styles/globals.css"
-import * as React from 'react';
-import { ThemeProvider as NextThemesProvider } from 'next-themes';
-import { createTheme, NextUIProvider } from "@nextui-org/react"
-const darkTheme = createTheme({
-  type: "dark",
-  theme: {
-    colors: {
-      background: "#1a1a1a",
-    }
-  }
-});
-const lightTheme = createTheme({
-  type: "light"
-});
-
+import "../styles/globals.css"
 function App({ Component }) {
   return (
-  <NextThemesProvider
-      defaultTheme="system"
-      attribute="class"
-      value={{
-        light: lightTheme.className,
-        dark: darkTheme.className
-      }}
-    >
-    <NextUIProvider>
-        <Component />
-    </NextUIProvider>
-    </NextThemesProvider>
+    <main className="antialised text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 w-screen h-screen overflow-x-clip">
+      <Component />
+    </main>
   );
 }
 export default App;

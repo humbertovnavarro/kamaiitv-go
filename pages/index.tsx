@@ -1,11 +1,16 @@
-import { Button } from '@nextui-org/react';
+import Button from '../components/button';
+import { TextInput } from '../components/input';
 import React from 'react';
-import Signup from '../components/signup';
 const Page = () => {
   return (
-    <div>
-      <Signup visible={true}/>
-    </div>
+    <>
+    <Button
+      label="submit"
+    />
+    <TextInput
+      label="input"
+    />
+    </>
   )
 }
 export default Page;

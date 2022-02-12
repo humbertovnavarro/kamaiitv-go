@@ -1,0 +1,17 @@
+version: "1.0"
+services:
+  api:
+    build:
+      context: ./
+      dockerfile: dev.Dockerfile
+    container_name: go
+    volumes:
+      - ./:/app
+  nginx:
+    ports:
+      - "127.0.0.1:1935:1935"
+    image: tiangolo/nginx-rtmp
+    volumes:
+      - ./nginx:/etc/nginx
+      - ./hls:/hls
+      - ./vod:/vod

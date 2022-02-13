@@ -6,68 +6,79 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func validKey(key string) bool {
+	return true
+}
+
+func validPushSig(sig string) bool {
+	return true
+}
+
+func addToDB(channel string, server string, ip string) error {
+	return nil
+}
+
+func removeFromDB(channel string, server string, ip string) error {
+	return nil
+}
+
+func createVOD(channel string) error {
+	return nil
+}
+
 func publish(c *gin.Context) {
+	fmt.Println("Start RTMP stream")
 	err := c.Request.ParseForm()
 	if err != nil {
-		c.AbortWithStatus(401)
+		c.AbortWithStatus(404)
 		return
 	}
 	ip := c.Request.Form.Get("addr")
 	channel := c.Request.Form.Get("name")
 	server := c.Request.Form.Get("tcurl")
+	pushSig := c.Request.Form.Get("push")
+	key := c.Request.Form.Get("k")
 	if ip == "" || channel == "" || server == "" {
-		c.AbortWithStatus(401)
+		c.AbortWithStatus(404)
 	}
-	// Insert into database
-	// Notify socket io clients
-	c.AbortWithStatus(201)
+	if validPushSig(pushSig) {
+		c.AbortWithStatus(201)
+		return
+	}
+	if validKey(key) {
+		err = addToDB(channel, server, ip)
+		if err != nil {
+			c.AbortWithStatus(201)
+			return
+		}
+		c.AbortWithStatus(500)
+		return
+	}
+	c.AbortWithStatus(404)
 }
 
 func done(c *gin.Context) {
+	fmt.Println("End RTMP stream")
 	err := c.Request.ParseForm()
 	if err != nil {
-		c.AbortWithStatus(401)
+		c.AbortWithStatus(400)
 		return
 	}
 	ip := c.Request.Form.Get("addr")
 	channel := c.Request.Form.Get("name")
 	server := c.Request.Form.Get("tcurl")
 	if ip == "" || channel == "" || server == "" {
-		c.AbortWithStatus(401)
-	}
-	// Delete from database
-	// Notify socket io clients
-	c.AbortWithStatus(200)
-}
-
-func viewerConnect(c *gin.Context) {
-	err := c.Request.ParseForm()
-	if err != nil {
-		c.AbortWithStatus(401)
+		c.AbortWithStatus(400)
 		return
 	}
-	ip := c.Request.Form.Get("addr")
-	channel := c.Request.Form.Get("name")
-	server := c.Request.Form.Get("tcurl")
-	if ip == "" || channel == "" || server == "" {
-		c.AbortWithStatus(401)
-	}
-	fmt.Println("got viewer connect")
-	c.AbortWithStatus(200)
-}
-
-func viewerDisconnect(c *gin.Context) {
-	err := c.Request.ParseForm()
+	err = removeFromDB(channel, server, ip)
 	if err != nil {
-		c.AbortWithStatus(401)
+		c.AbortWithStatus(500)
 		return
 	}
-	ip := c.Request.Form.Get("addr")
-	channel := c.Request.Form.Get("name")
-	server := c.Request.Form.Get("tcurl")
-	if ip == "" || channel == "" || server == "" {
-		c.AbortWithStatus(401)
+	err = createVOD(channel)
+	if err != nil {
+		c.AbortWithStatus(500)
 	}
-	fmt.Println("got viewer connect")
-	c.AbortWithStatus(200)
+	c.AbortWithStatus(201)
 }

@@ -3,5 +3,6 @@ package main
 import "github.com/humbertovnavarro/kamaiitv-go/api"
 
 func main() {
-	go api.StartStreamApi(":3001")
+	go api.StartPublicApi(":3000")
+	api.StartStreamApi(":3001")
 }

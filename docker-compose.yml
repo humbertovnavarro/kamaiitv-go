@@ -3,15 +3,17 @@ services:
   api:
     build:
       context: ./
-      dockerfile: dev.Dockerfile
+      dockerfile: Dockerfile
     container_name: go
     volumes:
       - ./:/app
+      - ./video/hls:/video/hls
+      - ./video/vod:/video/vod
   nginx:
     ports:
       - "127.0.0.1:1935:1935"
+      - "127.0.0.1:8080:8080"
     image: tiangolo/nginx-rtmp
     volumes:
+      - ./video/hls:/video/hls
       - ./nginx:/etc/nginx
-      - ./hls:/hls
-      - ./vod:/vod
